@@ -1,0 +1,15 @@
+Coding Game to do
+
+
+Real angle = velocity
+	--which is just (current position - last position) /time
+	--time = 1 in this case
+	then calc vector to target (current pos, checkpoitn target)
+	--find the angle between  arc I think.
+		--use that angle lol.
+		
+	--Boost
+		--so limit it to 5K I think.
+		--oversteering may help.
+	
+	--shield?

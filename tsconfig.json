@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "ES2017",
+        "module": "ES2020",
+        "outDir": "out",
+        "sourceMap": true,
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
