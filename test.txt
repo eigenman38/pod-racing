@@ -1,6 +1,10 @@
 Coding Game to do
 
 
+	--dump the inputs to stderr
+	--such that can be pulled out from file read. add a key
+
+
 Real angle = velocity
 	--which is just (current position - last position) /time
 	--time = 1 in this case
