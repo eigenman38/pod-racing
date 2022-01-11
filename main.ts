@@ -95,6 +95,19 @@ class System {
         return resultDegrees;
     }
 
+    ////////////////////////
+    private static calculateMagnitudeVector(vector: vectorType): number | null {
+
+        if (vector?.origin == null || vector?.direction == null) {
+            return null;
+        }
+
+        let length = Math.sqrt(Math.pow(vector.direction[0] - vector.origin[0], 2) + Math.pow(vector.direction[1] - vector.origin[1], 2));
+
+
+
+        return length;
+    }
 
     /////////////////////////
     // vectors are normalized to origin = [0,0]
@@ -137,8 +150,12 @@ class System {
 
 
 
-        let lengthA = Math.sqrt(Math.pow(normalizedVectorA.direction[0], 2) + Math.pow(normalizedVectorA.direction[1], 2));
-        let lengthB = Math.sqrt(Math.pow(normalizedVectorB.direction[0], 2) + Math.pow(normalizedVectorB.direction[1], 2));
+        let lengthA = this.calculateMagnitudeVector(normalizedVectorA);
+        let lengthB = this.calculateMagnitudeVector(normalizedVectorB);
+
+        if (lengthA == null || lengthB == null) {
+            return null;
+        }
 
         return lengthA * lengthB;
     }
@@ -231,7 +248,10 @@ class System {
         // update last
         this.lastPlayerPosition = Object.assign([], currentPlayerPosition);
 
+        let velocity: number | null = this.calculateMagnitudeVector(velocityVector);
+
         console.error(`calculateVelocityVector: velocityVector = ${JSON.stringify(velocityVector)}`);
+        console.error(`calculateVelocityVector: velocity = ${velocity}`);
 
         return velocityVector;
 
@@ -245,7 +265,7 @@ class System {
         angleToRotate: number //In degrees.  Positive is clockwise but our map y is flipped.  hmmmm
     ): pointType {
 
-        console.error(`rotateVector: origin: ${origin} target ${target} angleToRotate ${angleToRotate}`);
+        //console.error(`rotateVector: origin: ${origin} target ${target} angleToRotate ${angleToRotate}`);
 
         if (origin == null || target == null) {
             return null;
@@ -254,7 +274,7 @@ class System {
         // translate to normal
         let newTarget: pointType = [target[0] - origin[0], target[1] - origin[1]];
 
-        console.error(`rotateVector: Translate to 0,0: newTarget ${newTarget}`);
+        //console.error(`rotateVector: Translate to 0,0: newTarget ${newTarget}`);
 
         newTarget[0] =
             newTarget[0] * Math.cos((angleToRotate * Math.PI) / 180) -
@@ -264,12 +284,12 @@ class System {
             newTarget[1] * Math.cos((angleToRotate * Math.PI) / 180) +
             newTarget[0] * Math.sin((angleToRotate * Math.PI) / 180);
 
-        console.error(`rotateVector: Rotated: : newTarget ${newTarget}`);
+        //console.error(`rotateVector: Rotated: : newTarget ${newTarget}`);
 
         // translate back to origin
         newTarget = [Math.floor(newTarget[0] + origin[0]), Math.floor(newTarget[1] + origin[1])];
 
-        console.error(`rotateVector: Translated Back: origin: ${origin} newTarget ${newTarget}`);
+        //console.error(`rotateVector: Translated Back: origin: ${origin} newTarget ${newTarget}`);
 
 
         return newTarget;
@@ -301,35 +321,45 @@ class System {
     public static calculateNavigationTarget(
         playerPosition: pointType,
         currentCheckpoint: checkPointType,
-        checkpointAngle: number | null
+        steeringAngle: number | null,
+        velocityToCheckpointAngle: number | null
+
     ): pointType {
 
-        if (currentCheckpoint == null || checkpointAngle == null) {
+        if (currentCheckpoint == null || steeringAngle == null) {
             return null;
         }
         let currentTarget: pointType = [currentCheckpoint[0], currentCheckpoint[1]];
+
+        if (velocityToCheckpointAngle == null) {
+            return currentTarget;
+        }
         // tolerance
-        if (Math.abs(checkpointAngle) === 0 || Math.abs(checkpointAngle) >= 60) {
+        if (Math.abs(velocityToCheckpointAngle) <= 2 || Math.abs(velocityToCheckpointAngle) >= 89) {
             console.error(`calculateNavigationTarget: Angle within Tolerance or > 60 degrees: No Oversteer`);
 
             return currentTarget;
         }
 
-        let modifiedAngle = checkpointAngle * 1;
-        // if (modifiedAngle > 70) {
-        //     modifiedAngle = 70;
-        // }
-        // else if (modifiedAngle < -70) {
-        //     modifiedAngle = -70
-        // }
+        let rotateAngle: number = velocityToCheckpointAngle;
+        // cap the actually oversterr to 60
+        if (velocityToCheckpointAngle > 45) {
+            rotateAngle = 45;
+        }
+        else if (velocityToCheckpointAngle < -45) {
+            rotateAngle = -45;
+        }
+
+
+
 
         let newTarget = this.rotateVector(
             playerPosition,
             currentTarget,
-            modifiedAngle
+            rotateAngle
         );
 
-        console.error(`calculateNavigationTarget: Target Vector Rotated: ${checkpointAngle} degrees to ${newTarget}`);
+        console.error(`calculateNavigationTarget: Target Vector Rotated: ${velocityToCheckpointAngle} degrees to ${newTarget}`);
 
 
         // while (!this.insideArena(newTarget)) {
@@ -339,7 +369,7 @@ class System {
 
         // }
 
-        console.error(`calculateNavigationTarget: New Target = ${newTarget}`);
+        //console.error(`calculateNavigationTarget: New Target = ${newTarget}`);
 
         return newTarget;
     }
@@ -428,22 +458,22 @@ class System {
             return false;
         }
 
-        if (!this.lapped) {
-            console.error(`shouldWeBoost: Not Lapped`);
-            return false;
-        }
+        // if (!this.lapped) {
+        //     console.error(`shouldWeBoost: Not Lapped`);
+        //     return false;
+        // }
 
-        if (!this.onLongestLeg(checkPoint)) {
-            console.error(`shouldWeBoost: Not On Longest Leg`);
-            return false;
-        }
+        // if (!this.onLongestLeg(checkPoint)) {
+        //     console.error(`shouldWeBoost: Not On Longest Leg`);
+        //     return false;
+        // }
 
         if (!this.angleStableForBoost(checkpointAngle)) {
             console.error(`shouldWeBoost: Angle Unstable`);
             return false;
         }
 
-        if (checkPoint[2] <= 8000) {
+        if (checkPoint[2] < 6000) {
             console.error(`shouldWeBoost: Checkpoint too close`);
             return false;
         }
@@ -562,14 +592,14 @@ class System {
                 thrust = 20;
             }
         } else if (Math.abs(playerFacingCheckpointAngle) >= 100) {
-            thrust = 60;
+            thrust = 20;
             if (distanceToCheckpoint <= 3000) {
                 thrust = 20;
             }
         } else if (Math.abs(playerFacingCheckpointAngle) >= 90) {
-            thrust = 100;
+            thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 100;
+                thrust = 20;
             }
         } else if (Math.abs(playerFacingCheckpointAngle) >= 80) {
             thrust = 100;
@@ -771,21 +801,22 @@ while (true) {
     let velocityVector: vectorType = System.calculateVelocityVector(currentPlayerPosition);
     let checkPointVector: vectorType = System.calculateCheckPointVector(currentPlayerPosition, currentCheckpoint);
 
-    let navigationTargetAngle: number | null = null;
+    let velocityToCheckpointAngle: number | null;
 
     if (velocityVector == null) {
-        navigationTargetAngle = nextCheckpointAngle;
+        velocityToCheckpointAngle = null;
     }
     else {
-        navigationTargetAngle = System.calculateVelocityVectorToCheckPointVectoreAngle(velocityVector, checkPointVector);
+        velocityToCheckpointAngle = System.calculateVelocityVectorToCheckPointVectoreAngle(velocityVector, checkPointVector);
     }
 
-    let navigationTarget = System.calculateNavigationTarget(currentPlayerPosition, currentCheckpoint, navigationTargetAngle);
+    let navigationTarget = System.calculateNavigationTarget(currentPlayerPosition, currentCheckpoint,
+        nextCheckpointAngle, velocityToCheckpointAngle);
     ///////////////
 
     // engine throttle
     let thrust = 0;
-    let boost = System.shouldWeBoost(currentCheckpoint, navigationTargetAngle);
+    let boost = System.shouldWeBoost(currentCheckpoint, nextCheckpointAngle);
     if (!boost) {
         thrust = System.calculateThrust(nextCheckpointAngle, nextCheckpointDist)!;
     }
