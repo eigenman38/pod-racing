@@ -1,19 +1,4 @@
-Coding Game to do
-
-
-	--dump the inputs to stderr
-	--such that can be pulled out from file read. add a key
-
-
-Real angle = velocity
-	--which is just (current position - last position) /time
-	--time = 1 in this case
-	then calc vector to target (current pos, checkpoitn target)
-	--find the angle between  arc I think.
-		--use that angle lol.
-		
-	--Boost
-		--so limit it to 5K I think.
-		--oversteering may help.
-	
-	--shield?
+14307 8220 6346 4306 8871 0
+14697 7300
+14217 8176 6346 4306 8771 0
+14085 7081

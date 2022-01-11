@@ -1,3 +1,4 @@
+
 import * as fs from 'fs';
 
 let filePath = "test.txt";
@@ -33,5 +34,5 @@ export function readline(): string {
 
     }
 
-    return lines[index];
+    return lines[index++];
 }

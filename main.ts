@@ -1,4 +1,4 @@
-import { readline } from "./coding-game-utils";
+//import { readline } from "./coding-game-utils.js";
 
 
 
@@ -34,30 +34,63 @@ class System {
     private static lapped: boolean = false;
     private static largestCheckpointIndex: number | null = null;
 
+
+    private static vectorNormalized(vector: vectorType): boolean {
+        if (vector?.direction == null || vector?.origin == null) {
+            return false;
+        }
+
+        if (vector.origin[0] !== 0 && vector.origin[1] !== 0) {
+            return false;
+        }
+
+        return true;
+
+    }
+
+
+
     ////////////////////////////////////////////////////////////
     // arcos  R(-1,1) => R(0, pi)[Radians] R(0, 180)[degrees)]
     // vectors are normalized to origin = [0,0]
     // returns degrees
-    private static findAngleBetweenVectors(normalizedVectorA: vectorType, normalizedVectorB: vectorType): number {
+    private static findAngleBetweenVectors(normalizedVectorA: vectorType, normalizedVectorB: vectorType): number | null {
         // α = arccos[(a · b) / (|a| * |b|)]   arccos(dot product / product of magnitudes)
 
         if (normalizedVectorA?.direction == null || normalizedVectorB?.direction == null
             || normalizedVectorA?.origin == null || normalizedVectorB?.origin == null) {
-            throw (`findAngleBetweenVectors: vector  null:  normalizedVectorA = ${normalizedVectorA} normalizedVectorB = ${normalizedVectorB}`)
+            console.error(`findAngleBetweenVectors: vector  null:  normalizedVectorA = ${normalizedVectorA} normalizedVectorB = ${normalizedVectorB}`);
+            return null;
 
         }
 
-        if (normalizedVectorA.origin !== [0, 0] || normalizedVectorB.origin !== [0, 0]) {
-            throw (`findAngleBetweenVectors: vectors not normalized: orgins have to be [0,0]:  normalizedVectorA.origin = ${normalizedVectorA.origin} normalizedVectorB.origin = ${normalizedVectorB.origin}`)
+        if (!this.vectorNormalized(normalizedVectorA) || !this.vectorNormalized(normalizedVectorB)) {
+            console.error(
+                `findAngleBetweenVectors: vectors not normalized: orgins have to be [0,0]:  normalizedVectorA.origin = ${normalizedVectorA.origin} normalizedVectorB.origin = ${normalizedVectorB.origin}`);
+            return null;
         }
 
 
-        let resultRadians = Math.acos(
-            this.dotProductVectors(normalizedVectorA, normalizedVectorB) / this.productMagnitudesVectors(normalizedVectorA, normalizedVectorB)
-        );
+        let resultRadians = Math.atan2(normalizedVectorA.direction[0], normalizedVectorA.direction[1]) -
+            Math.atan2(normalizedVectorB.direction[0], normalizedVectorB.direction[1]);
+
+
+        // Math.acos(
+        //     this.dotProductVectors(normalizedVectorA, normalizedVectorB)! / this.productMagnitudesVectors(normalizedVectorA, normalizedVectorB)!
+        // );
+
+
 
         // convert to degrees
         let resultDegrees = resultRadians * 180 / Math.PI;
+
+        if (resultDegrees > 90) {
+            resultDegrees -= 360;
+        }
+        else if (resultDegrees < -90) {
+            resultDegrees += 360;
+        }
+
 
         return resultDegrees;
     }
@@ -65,32 +98,41 @@ class System {
 
     /////////////////////////
     // vectors are normalized to origin = [0,0]
-    private static dotProductVectors(normalizedVectorA: vectorType, normalizedVectorB: vectorType): number {
+    private static dotProductVectors(normalizedVectorA: vectorType, normalizedVectorB: vectorType): number | null {
 
         if (normalizedVectorA?.direction == null || normalizedVectorB?.direction == null
             || normalizedVectorA?.origin == null || normalizedVectorB?.origin == null) {
-            throw (`dotProductVectors: vector  null:  normalizedVectorA = ${normalizedVectorA} normalizedVectorB = ${normalizedVectorB}`)
+            console.error(`dotProductVectors: vector  null:  normalizedVectorA = ${normalizedVectorA} normalizedVectorB = ${normalizedVectorB}`);
+            return null;
 
         }
 
-        if (normalizedVectorA.origin !== [0, 0] || normalizedVectorB.origin !== [0, 0]) {
-            throw (`dotProductVectors: vectors not normalized: orgins have to be [0,0]:  normalizedVectorA.origin = ${normalizedVectorA.origin} normalizedVectorB.origin = ${normalizedVectorB.origin}`)
+        if (!this.vectorNormalized(normalizedVectorA) || !this.vectorNormalized(normalizedVectorB)) {
+
+            console.error(
+                `dotProductVectors: vectors not normalized: orgins have to be [0,0]:  normalizedVectorA.origin = ${normalizedVectorA.origin} normalizedVectorB.origin = ${normalizedVectorB.origin}`);
+            return null;
         }
+
 
 
         return normalizedVectorA.direction[0] * normalizedVectorB.direction[0] + normalizedVectorA.direction[1] * normalizedVectorB.direction[1];
     }
 
-    private static productMagnitudesVectors(normalizedVectorA: vectorType, normalizedVectorB: vectorType): number {
+    private static productMagnitudesVectors(normalizedVectorA: vectorType, normalizedVectorB: vectorType): number | null {
 
         if (normalizedVectorA?.direction == null || normalizedVectorB?.direction == null
             || normalizedVectorA?.origin == null || normalizedVectorB?.origin == null) {
-            throw (`productMagnitudesVectors: vector  null:  normalizedVectorA = ${normalizedVectorA} normalizedVectorB = ${normalizedVectorB}`)
+            console.error(`productMagnitudesVectors: vector  null:  normalizedVectorA = ${normalizedVectorA} normalizedVectorB = ${normalizedVectorB}`);
+            return null;
 
         }
 
-        if (normalizedVectorA.origin !== [0, 0] || normalizedVectorB.origin !== [0, 0]) {
-            throw (`productMagnitudesVectors: vectors not normalized: orgins have to be [0,0]:  normalizedVectorA.origin = ${normalizedVectorA.origin} normalizedVectorB.origin = ${normalizedVectorB.origin}`)
+        if (!this.vectorNormalized(normalizedVectorA) || !this.vectorNormalized(normalizedVectorB)) {
+
+            console.error(
+                `productMagnitudesVectors: vectors not normalized: orgins have to be [0,0]:  normalizedVectorA.origin = ${normalizedVectorA.origin} normalizedVectorB.origin = ${normalizedVectorB.origin}`);
+            return null;
         }
 
 
@@ -104,11 +146,13 @@ class System {
     private static normalizeVectorToOrigin(vector: vectorType): vectorType {
 
         if (vector?.origin?.[0] == null || vector?.origin?.[1] == null || vector?.direction?.[0] == null || vector?.direction?.[1] == null) {
-            throw (`normalizeVectorToOrigin: vector can't be null or have nulls. vector = ${vector}`)
+            console.error(`normalizeVectorToOrigin: vector can't be null or have nulls. vector = ${vector}`);
+            return null;
         }
 
         if (vector == null) {
-            throw (`normalizeVectorToOrigin: vector can't be null.`)
+            console.error(`normalizeVectorToOrigin: vector can't be null.`);
+            return null;
         }
 
         let vectorNormalized: vectorType = {
@@ -122,13 +166,15 @@ class System {
 
 
     ///////////////////////////////
-    public static calculateVelocityVectorToCheckPointVectoreAngle(velocityVector: vectorType, checkPointVector: vectorType): number {
+    public static calculateVelocityVectorToCheckPointVectoreAngle(velocityVector: vectorType, checkPointVector: vectorType): number | null {
 
         if (velocityVector == null) {
-            throw (`calculateVelocityVectorToCheckPointVectoreAngle: velocityVector can't be null.`)
+            console.error(`calculateVelocityVectorToCheckPointVectoreAngle: velocityVector can't be null.`);
+            return null;
         }
         if (checkPointVector == null) {
-            throw (`calculateVelocityVectorToCheckPointVectoreAngle: checkPointVector can't be null.`)
+            console.error(`calculateVelocityVectorToCheckPointVectoreAngle: checkPointVector can't be null.`);
+            return null;
         }
 
         // Normalize to (0,0)
@@ -147,16 +193,18 @@ class System {
     /////////////////////////////////////
     public static calculateCheckPointVector(currentPlayerPosition: pointType, currentCheckpoint: checkPointType): vectorType {
         if (currentPlayerPosition == null) {
-            throw (`calculateCheckPointVector: currentPlayerPosition can't be null.`)
+            console.error(`calculateCheckPointVector: currentPlayerPosition can't be null.`);
+            return null;
         }
         if (currentCheckpoint == null) {
-            throw (`calculateCheckPointVector: currentCheckpoint can't be null.`)
+            console.error(`calculateCheckPointVector: currentCheckpoint can't be null.`);
+            return null;
         }
 
 
         let checkPointVector: vectorType = { origin: currentPlayerPosition, direction: [currentCheckpoint[0], currentCheckpoint[1]] };
 
-        console.error(`calculateCheckPointVector: checkPointVector = ${checkPointVector}`);
+        console.error(`calculateCheckPointVector: checkPointVector = ${JSON.stringify(checkPointVector)}`);
 
         return checkPointVector;
 
@@ -167,7 +215,8 @@ class System {
     public static calculateVelocityVector(currentPlayerPosition: pointType): vectorType {
 
         if (currentPlayerPosition == null) {
-            throw (`calculateVelocityVector: currentPlayerPosition can't be null.`)
+            console.error(`calculateVelocityVector: currentPlayerPosition can't be null.`);
+            return null;
         }
 
         if (this.lastPlayerPosition == null) {
@@ -179,7 +228,10 @@ class System {
         // otherwise we have a verlocity vector so compute it
         let velocityVector: vectorType = { origin: this.lastPlayerPosition, direction: currentPlayerPosition };
 
-        console.error(`calculateVelocityVector: velocityVector = ${velocityVector}`);
+        // update last
+        this.lastPlayerPosition = Object.assign([], currentPlayerPosition);
+
+        console.error(`calculateVelocityVector: velocityVector = ${JSON.stringify(velocityVector)}`);
 
         return velocityVector;
 
@@ -249,27 +301,27 @@ class System {
     public static calculateNavigationTarget(
         playerPosition: pointType,
         currentCheckpoint: checkPointType,
-        checkpointAngle: number
+        checkpointAngle: number | null
     ): pointType {
 
-        if (currentCheckpoint == null) {
+        if (currentCheckpoint == null || checkpointAngle == null) {
             return null;
         }
         let currentTarget: pointType = [currentCheckpoint[0], currentCheckpoint[1]];
         // tolerance
-        if (Math.abs(checkpointAngle) === 0 || Math.abs(checkpointAngle) >= 70) {
-            console.error(`calculateNavigationTarget: Angle within Tolerance or > 70 degrees: No Oversteer`);
+        if (Math.abs(checkpointAngle) === 0 || Math.abs(checkpointAngle) >= 60) {
+            console.error(`calculateNavigationTarget: Angle within Tolerance or > 60 degrees: No Oversteer`);
 
             return currentTarget;
         }
 
         let modifiedAngle = checkpointAngle * 1;
-        if (modifiedAngle > 70) {
-            modifiedAngle = 70;
-        }
-        else if (modifiedAngle < -70) {
-            modifiedAngle = -70
-        }
+        // if (modifiedAngle > 70) {
+        //     modifiedAngle = 70;
+        // }
+        // else if (modifiedAngle < -70) {
+        //     modifiedAngle = -70
+        // }
 
         let newTarget = this.rotateVector(
             playerPosition,
@@ -280,12 +332,12 @@ class System {
         console.error(`calculateNavigationTarget: Target Vector Rotated: ${checkpointAngle} degrees to ${newTarget}`);
 
 
-        while (!this.insideArena(newTarget)) {
-            console.error(`calculateNavigationTarget: Target Vector Not In Arena Bounds: Finding midpoint`);
-            newTarget = this.findMidPoint(playerPosition, newTarget);
-            console.error(`calculateNavigationTarget: Midpoint = ${newTarget}`);
+        // while (!this.insideArena(newTarget)) {
+        //     console.error(`calculateNavigationTarget: Target Vector Not In Arena Bounds: Finding midpoint`);
+        //     newTarget = this.findMidPoint(playerPosition, newTarget);
+        //     console.error(`calculateNavigationTarget: Midpoint = ${newTarget}`);
 
-        }
+        // }
 
         console.error(`calculateNavigationTarget: New Target = ${newTarget}`);
 
@@ -355,11 +407,16 @@ class System {
     ////////////////////////////////
     public static shouldWeBoost(
         checkPoint: checkPointType,
-        checkpointAngle: number
+        checkpointAngle: number | null
     ): boolean {
         // !boosted
         // angle is stable
         // on longest leg ( that we know this means we have lapped)
+
+        if (checkpointAngle == null) {
+            console.error(`shouldWeBoost: checkpointAngle Null or Undefined`);
+            return false;
+        }
 
         if (checkPoint == null) {
             console.error(`shouldWeBoost: checkPoint Null or Undefined`);
@@ -386,7 +443,7 @@ class System {
             return false;
         }
 
-        if (checkPoint[2] <= 6000) {
+        if (checkPoint[2] <= 8000) {
             console.error(`shouldWeBoost: Checkpoint too close`);
             return false;
         }
@@ -398,7 +455,7 @@ class System {
 
     ////////////////////////////
     public static angleStableForBoost(checkpointAngle: number): boolean {
-        return checkpointAngle === 0;
+        return Math.abs(checkpointAngle) <= 5;
     }
 
     /////////////////////////////////
@@ -457,103 +514,108 @@ class System {
 
     //////////////////////////////////////
     public static calculateThrust(
-        checkpointAngle: number,
+        playerFacingCheckpointAngle: number | null,
         distanceToCheckpoint: number
     ): number {
 
-        return 100;
         let thrust: number = 0;
 
-        if (checkpointAngle >= 170 || checkpointAngle <= -170) {
+
+        if (playerFacingCheckpointAngle == null) {
+            return 100;
+        }
+
+
+        if (Math.abs(playerFacingCheckpointAngle) >= 170) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 160 || checkpointAngle <= -160) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 160) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 150 || checkpointAngle <= -150) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 150) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 140 || checkpointAngle <= -140) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 140) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 130 || checkpointAngle <= -130) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 130) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 120 || checkpointAngle <= -120) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 120) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 110 || checkpointAngle <= -110) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 110) {
             thrust = 20;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 100 || checkpointAngle <= -100) {
-            thrust = 20;
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 100) {
+            thrust = 60;
             if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
+                thrust = 20;
             }
-        } else if (checkpointAngle >= 90 || checkpointAngle <= -90) {
-            thrust = 20;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = 0;
-            }
-        } else if (checkpointAngle >= 80 || checkpointAngle <= -80) {
-            thrust = 50;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 4;
-            }
-        } else if (checkpointAngle >= 70 || checkpointAngle <= -70) {
-            thrust = 70;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 4;
-            }
-        } else if (checkpointAngle >= 60 || checkpointAngle <= -60) {
-            thrust = 80;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 4;
-            }
-        } else if (checkpointAngle >= 50 || checkpointAngle <= -50) {
-            thrust = 80;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 2;
-            }
-        } else if (checkpointAngle >= 40 || checkpointAngle <= -40) {
-            thrust = 80;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 2;
-            }
-        } else if (checkpointAngle >= 30 || checkpointAngle <= -30) {
-            thrust = 80;
-            if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 2;
-            }
-        } else if (checkpointAngle >= 20 || checkpointAngle <= -20) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 90) {
             thrust = 100;
             if (distanceToCheckpoint <= 3000) {
-                thrust = thrust / 2;
+                thrust = 100;
             }
-        } else if (checkpointAngle >= 10 || checkpointAngle <= -10) {
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 80) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 70) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 60) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 50) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 40) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 30) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 20) {
+            thrust = 100;
+            if (distanceToCheckpoint <= 3000) {
+                thrust = 100;
+            }
+        } else if (Math.abs(playerFacingCheckpointAngle) >= 10) {
             thrust = 100;
             if (distanceToCheckpoint <= 2500) {
-                thrust = thrust / 2;
+                thrust = 100;
             }
         }
-        else if (checkpointAngle >= 5 || checkpointAngle <= -5) {
+        else if (Math.abs(playerFacingCheckpointAngle) >= 5) {
             thrust = 100;
             if (distanceToCheckpoint <= 2000) {
-                thrust = thrust / 2;
+                thrust = 100;
             }
         } else {
             thrust = 100;
@@ -639,17 +701,31 @@ class System {
 
 /////////////////////////////////////////////
 // game loop
+//debug
+let frameIndex = 0;
+//while (frameIndex++ < 2) {
 while (true) {
-    var inputs: string[] = readline().split(' ');
+    let line = readline();
+    // dump inputs
+    console.error(`Input Line1:=${line}==`);
+
+    var inputs: string[] = line.split(' ');
     const x: number = parseInt(inputs[0]);
     const y: number = parseInt(inputs[1]);
     const nextCheckpointX: number = parseInt(inputs[2]); // x position of the next check point
     const nextCheckpointY: number = parseInt(inputs[3]); // y position of the next check point
     const nextCheckpointDist: number = parseInt(inputs[4]); // distance to the next checkpoint
     const nextCheckpointAngle: number = parseInt(inputs[5]); // angle between your pod orientation and the direction of the next checkpoint
-    var inputs: string[] = readline().split(' ');
+
+    line = readline();
+    // dump inputs
+    console.error(`Input Line2:=${line}==`);
+
+    var inputs: string[] = line.split(' ');
     const opponentX: number = parseInt(inputs[0]);
     const opponentY: number = parseInt(inputs[1]);
+
+
 
     // translate into better object types.
     let currentCheckpoint: checkPointType = [
@@ -711,7 +787,7 @@ while (true) {
     let thrust = 0;
     let boost = System.shouldWeBoost(currentCheckpoint, navigationTargetAngle);
     if (!boost) {
-        thrust = System.calculateThrust(navigationTargetAngle, nextCheckpointDist);
+        thrust = System.calculateThrust(nextCheckpointAngle, nextCheckpointDist)!;
     }
 
 
