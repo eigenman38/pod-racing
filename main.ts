@@ -96,7 +96,7 @@ class System {
     }
 
     ////////////////////////
-    private static calculateMagnitudeVector(vector: vectorType): number | null {
+    public static calculateMagnitudeVector(vector: vectorType): number | null {
 
         if (vector?.origin == null || vector?.direction == null) {
             return null;
@@ -437,7 +437,8 @@ class System {
     ////////////////////////////////
     public static shouldWeBoost(
         checkPoint: checkPointType,
-        checkpointAngle: number | null
+        checkpointAngle: number | null,
+        velocity: number | null
     ): boolean {
         // !boosted
         // angle is stable
@@ -475,6 +476,11 @@ class System {
 
         if (checkPoint[2] < 6000) {
             console.error(`shouldWeBoost: Checkpoint too close`);
+            return false;
+        }
+
+        if (velocity != null && velocity >= 300) {
+            console.error(`shouldWeBoost: Velocity too fast`);
             return false;
         }
 
@@ -530,9 +536,10 @@ class System {
         boost: boolean,
         target: pointType,
         checkPoint: checkPointType,
-        thrust: number
+        thrust: number,
+        velocity: number | null
     ): void {
-        if (boost && this.shouldWeBoost(checkPoint, checkpointAngle)) {
+        if (boost && this.shouldWeBoost(checkPoint, checkpointAngle, velocity)) {
             // boost
             console.log(`${target?.[0]}  ${target?.[1]}  BOOST`);
             this.boosted = true;
@@ -545,6 +552,8 @@ class System {
     //////////////////////////////////////
     public static calculateThrust(
         playerFacingCheckpointAngle: number | null,
+        velocityAngle: number | null,
+        velocity: number | null,
         distanceToCheckpoint: number
     ): number {
 
@@ -650,6 +659,11 @@ class System {
         } else {
             thrust = 100;
 
+        }
+
+
+        if (velocityAngle != null && velocity != null && Math.abs(velocityAngle) <= 2.5 && velocity >= 300 && distanceToCheckpoint <= 2000) {
+            thrust = 20;
         }
 
 
@@ -800,6 +814,7 @@ while (true) {
     // determine navigation target //////////
     let velocityVector: vectorType = System.calculateVelocityVector(currentPlayerPosition);
     let checkPointVector: vectorType = System.calculateCheckPointVector(currentPlayerPosition, currentCheckpoint);
+    let velocity = System.calculateMagnitudeVector(velocityVector);
 
     let velocityToCheckpointAngle: number | null;
 
@@ -816,9 +831,9 @@ while (true) {
 
     // engine throttle
     let thrust = 0;
-    let boost = System.shouldWeBoost(currentCheckpoint, nextCheckpointAngle);
+    let boost = System.shouldWeBoost(currentCheckpoint, nextCheckpointAngle, velocity);
     if (!boost) {
-        thrust = System.calculateThrust(nextCheckpointAngle, nextCheckpointDist)!;
+        thrust = System.calculateThrust(nextCheckpointAngle, velocityToCheckpointAngle, velocity, nextCheckpointDist)!;
     }
 
 
@@ -829,7 +844,8 @@ while (true) {
         boost,
         navigationTarget,
         currentCheckpoint,
-        thrust
+        thrust,
+        velocity
     );
 
     System.outputErrorParams(
